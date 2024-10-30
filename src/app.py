@@ -13,7 +13,7 @@ cons=MySQL(app)
 def listaAlumnos():
     try:
         cursor=cons.connection.cursor()
-        sql="select * from alumnos"
+        sql="SELECT * FROM alumnos"
         cursor.execute(sql)
         datos=cursor.fetchall()
         alumnos=[]
@@ -32,9 +32,9 @@ def listaAlumnos():
         return jsonify({"message": "error {}".format(ex), 'exito':False}),500
 
 @app.route("/alumnos/<mat>", methods=['GET'])
-def leer_alumno(matricula):
+def leer_alumno(mat):
     try:
-        alumno=leer_alumno_bd(matricula)
+        alumno=leer_alumno_bd(mat)
         if alumno!=None:
             return jsonify({'alumno':alumno, 'mensaje':'Alumno encontrado', 'exito':True})
         else:
@@ -65,6 +65,26 @@ def leer_alumno_bd(matricula):
             return None
     except Exception as ex:
         return jsonify({"message": "error {}".format(ex), 'exito':False}),500
+    
+@app.route("/alumnos", methods=['POST'])
+def registrar_alumno():
+    try:
+        alumno=leer_alumno_bd(request.json['matricula'])
+        if alumno!=None:
+            return jsonify({'mensaje': "Alumno ya existe, No se puede duplicar",'exito':False})
+        else:
+            cursor=cons.connection.cursor()
+            sql="""Insert into alumnos (matricula, nombre, apaterno, amaterno, correo) 
+            values ('{0}','{1}','{2}','{3}','{4}')""".format(request.json['matricula'], 
+            request.json['nombre'], request.json['apaterno'], request.json['amaterno'], 
+            request.json['correo'])
+            cursor.execute(sql)
+            cons.connection.commit()
+            return jsonify({'mensaje':"Alumno registrado", "exito":True})
+        
+    except Exception as ex:
+        return jsonify({'mensaje':"Error", 'Exito':False})
+
 
 if __name__=="__main__":
     app.config.from_object(config['development'])
